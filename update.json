@@ -1,6 +1,6 @@
 {
   "version": "v1.1",
-  "versionCode": 10,
+  "versionCode": 11,
   "zipUrl": "https://github.com/chendaojing949-sketch/AaTempSpoof/releases/download/v1.1/default.zip",
   "changelog": "https://raw.githubusercontent.com/chendaojing949-sketch/AaTempSpoof/main/changelog.md",
   "minMagisk": 24000,
