@@ -1,31 +1,12 @@
 AaTempSpoof v9.6
 
-配置目录修改 改为自定义配置.txt 更加清晰明了
-
-移除电池温度自定义 避免乱调 默认36(最佳温度)
-
-去温控逻辑合并二进制
-
-重写 action.sh 交互逻辑，整体流程更顺一点
-
-新增进度条显示，执行过程不再“黑屏等待”
-
-优化守护进程判断，避免重复启动
-
-加强 PID 管理，异常退出后可正常恢复
-
-调整电池 overlay 双覆盖顺序，提高成功率
-
-修复部分机型温度不刷新问题
-
-修复偶发全部显示同一温度的显示异常
-
-真实读取与伪装显示逻辑分离处理
-
-优化配置读取容错，防止配置异常导致停止工作
-
-精简日志输出，去掉多余调试信息
-
-卸载前自动执行清理脚本，减少残留
-
-降低后台循环频率，占用更低
+🔴 IRQ 爆满 / 卡顿根因与修复（service.sh 完全重写）
+根因：守护进程以默认 SCHED_OTHER 优先级高频轮询 emul_temp 节点 → 触发 thermal 驱动大量内核中断 → irq/kworker 进程 CPU 飙升 → 输入事件被延迟 → 卡顿。8gen3/8Elite 的 thermal 中断路由比旧平台更敏感，所以新芯片上症状更严重。
+修复：启动后自动检测效率核（读 cpuinfo_max_freq 最低频率核），然后对守护进程施加：
+chrt -i（SCHED_IDLE，内核级最低调度类，不抢占任何进程）
+renice +19（用户空间最低优先级）
+ionice -c 3（I/O idle，sysfs 写入不抢 I/O）
+taskset 绑定到效率核（减少大核 IRQ 路由）
+写入 cpuset/background/tasks（调度器级隔离）
+新增适配（+10 个高通平台代号）
+pineapple(8Gen3)、sun(8Elite)、cliffs(7+Gen3)、crow、kona(865/870)、lahaina(888)、shima、yupik、anorak、ravelin
