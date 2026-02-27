@@ -1,12 +1,18 @@
-AaTempSpoof v9.6
+AaTempSpoof v10.1 更新内容
+移除8e适配 稳定版
 
-🔴 IRQ 爆满 / 卡顿根因与修复（service.sh 完全重写）
-根因：守护进程以默认 SCHED_OTHER 优先级高频轮询 emul_temp 节点 → 触发 thermal 驱动大量内核中断 → irq/kworker 进程 CPU 飙升 → 输入事件被延迟 → 卡顿。8gen3/8Elite 的 thermal 中断路由比旧平台更敏感，所以新芯片上症状更严重。
-修复：启动后自动检测效率核（读 cpuinfo_max_freq 最低频率核），然后对守护进程施加：
-chrt -i（SCHED_IDLE，内核级最低调度类，不抢占任何进程）
-renice +19（用户空间最低优先级）
-ionice -c 3（I/O idle，sysfs 写入不抢 I/O）
-taskset 绑定到效率核（减少大核 IRQ 路由）
-写入 cpuset/background/tasks（调度器级隔离）
-新增适配（+10 个高通平台代号）
-pineapple(8Gen3)、sun(8Elite)、cliffs(7+Gen3)、crow、kona(865/870)、lahaina(888)、shima、yupik、anorak、ravelin
+去掉的东西
+charging_monitor.sh / mtk_spoof.sh / temp_daemon.sh 这几个脚本全砍了，逻辑全部塞进二进制和 service.sh 里，以后进程更干净
+日用和充电两个配置文件合并成一个 Aa自定义配置.txt，放在 /data/adb/modules/AAaTempSpoof/ 下，改完 30 秒自动生效不用重启
+
+新加的东西
+正式加入去温控，之前只是骗数字，这版会直接关掉充电热控节点、禁用慢充、同时允许 PPS/UFCS 快充协议，充电速度拉满
+service 启动时会自动扫所有 thermal 节点，记录哪些可写哪些不行，方便排查问题
+守护进程现在会自动绑小核运行，省电
+新增 post-fs-data 早期挂载，兼容性应该会好一点
+
+配置变化
+现在只开放 CPU / GPU / 内存 三个温度自定义，电池固定 36°C 不让改了，其余热区也固定 36°C，比之前简单很多
+
+升级注意
+安装时会自动清掉旧版 AaTempSpoof 和 AaTempdc 的残留，直接刷就行不用手动删
