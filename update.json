@@ -1,7 +1,7 @@
 {
-  "version": "v10.3",
-  "versionCode": 103,
-  "zipUrl": "https://github.com/chendaojing949-sketch/AaTempSpoof/releases/download/v10.3/AaTempSpoof_v10_3.zip",
+  "version": "v10.4",
+  "versionCode": 104,
+  "zipUrl": "https://github.com/chendaojing949-sketch/AaTempSpoof/releases/download/v10.4/AaTempSpoof_10.4.zip",
   "changelog": "https://raw.githubusercontent.com/chendaojing949-sketch/AaTempSpoof/main/changelog.md",
   "minMagisk": 24000,
   "support": ["arm64-v8a"]
