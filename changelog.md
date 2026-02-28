@@ -1,18 +1,15 @@
-AaTempSpoof v10.1 更新内容
-移除8e适配 稳定版
+v10.2 修复内容汇总：
 
-去掉的东西
-charging_monitor.sh / mtk_spoof.sh / temp_daemon.sh 这几个脚本全砍了，逻辑全部塞进二进制和 service.sh 里，以后进程更干净
-日用和充电两个配置文件合并成一个 Aa自定义配置.txt，放在 /data/adb/modules/AAaTempSpoof/ 下，改完 30 秒自动生效不用重启
+Bug①：概率重启后不启动伪装
+根因：service.sh 检测 daemon.pid 时只判断 /proc/$PID 目录存在，但重启后旧 PID 可能已被系统其他进程复用，导致误判为"守护进程已运行"→ exit 0，实际上什么都没启动。
+修复：
+读取 /proc/$PID/cmdline 验证进程名确实是 AaTempSpoof 才信任
+开机时强制清理残留的 daemon.pid 和 fake_batt_temp 两个跨重启 stale 文件
 
-新加的东西
-正式加入去温控，之前只是骗数字，这版会直接关掉充电热控节点、禁用慢充、同时允许 PPS/UFCS 快充协议，充电速度拉满
-service 启动时会自动扫所有 thermal 节点，记录哪些可写哪些不行，方便排查问题
-守护进程现在会自动绑小核运行，省电
-新增 post-fs-data 早期挂载，兼容性应该会好一点
-
-配置变化
-现在只开放 CPU / GPU / 内存 三个温度自定义，电池固定 36°C 不让改了，其余热区也固定 36°C，比之前简单很多
-
-升级注意
-安装时会自动清掉旧版 AaTempSpoof 和 AaTempdc 的残留，直接刷就行不用手动删
+Bug②：概率掉伪装
+根因：service.sh 只在开机时运行一次，守护进程崩溃后没有任何机制重启它。
+修复：在 service.sh 末尾加入 Watchdog 循环（取代原来的 exit 0）：
+每 30 秒检测一次守护进程是否存活
+检测逻辑同样带 cmdline 验证，防止 PID 复用误报
+发现进程死亡后自动重启 + 重新 maximize_charging
+连续失败超过 5 次停止自动重启（防止硬件异常时无限循环）
