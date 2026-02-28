@@ -1,15 +1,18 @@
-v10.2 修复内容汇总：
+AaTempSpoofv10.3 
 
-Bug①：概率重启后不启动伪装
-根因：service.sh 检测 daemon.pid 时只判断 /proc/$PID 目录存在，但重启后旧 PID 可能已被系统其他进程复用，导致误判为"守护进程已运行"→ exit 0，实际上什么都没启动。
-修复：
-读取 /proc/$PID/cmdline 验证进程名确实是 AaTempSpoof 才信任
-开机时强制清理残留的 daemon.pid 和 fake_batt_temp 两个跨重启 stale 文件
+优化内容：
 
-Bug②：概率掉伪装
-根因：service.sh 只在开机时运行一次，守护进程崩溃后没有任何机制重启它。
-修复：在 service.sh 末尾加入 Watchdog 循环（取代原来的 exit 0）：
-每 30 秒检测一次守护进程是否存活
-检测逻辑同样带 cmdline 验证，防止 PID 复用误报
-发现进程死亡后自动重启 + 重新 maximize_charging
-连续失败超过 5 次停止自动重启（防止硬件异常时无限循环）
+功耗优化
+Watchdog 轮询间隔 60s → 120s，系统唤醒次数再减一半
+Watchdog 循环本体 renice +10，低优先级运行不抢占资源
+Watchdog 检测到 STOP_FLAG 时完全跳过（零 I/O），不写日志
+彻底移除从未被调用的 get_little_core_mask() 函数（每次调用要遍历所有 CPU 节点）
+maximize_charging() 改为先读后写：节点值已正确时不写入，避免无效 sysfs I/O
+service.sh 的 Thermal 节点扫描阶段去掉逐节点详细日志，只记录总数（减少大量 I/O）
+
+充电速度提升
+charging_*txt 温度阈值偏移量 +80 → +100（更激进）
+
+新增充电节点：wired_boost_enable、stop_chg、super_endurance_mode（防省电限速）
+
+快充协议节点覆盖到 customize 安装阶段和 service 运行时双重写入
